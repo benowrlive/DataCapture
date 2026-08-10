@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_form_fields.html" import render_fields %}
+{% block title %}{{ inst.label }} — {{ rec.record_name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('records.dashboard', pid=g.project.id) }}">← Record dashboard</a></p>
+<h1>{{ inst.label }}</h1>
+<p><strong>{{ g.project.record_label }}:</strong> {{ rec.record_name }}
+   {% if event %} · <strong>Event:</strong> {{ event.label }}{% endif %}</p>
+
+{% if errors %}
+<div class="error-box">Please fix the {{ errors|length }} highlighted
+  field{{ 's' if errors|length > 1 }} below and save again.</div>
+{% endif %}
+
+<div class="card">
+<form method="post" id="entry-form" enctype="multipart/form-data">
+  {{ render_fields(fields, values, errors, effective_choices, readonly, file_ctx, original_name) }}
+  <div class="q-block">
+    <label for="form_status">Form status</label>
+    <select name="form_status" id="form_status" {{ 'disabled' if readonly }}>
+      <option value="incomplete" {{ 'selected' if status == 'incomplete' }}>Incomplete</option>
+      <option value="unverified" {{ 'selected' if status == 'unverified' }}>Unverified</option>
+      <option value="complete" {{ 'selected' if status == 'complete' }}>Complete</option>
+    </select>
+  </div>
+  {% if not readonly %}
+  <p><button class="btn" type="submit">Save &amp; Exit Form</button></p>
+  {% else %}
+  <p class="hint">You have read-only access to this project.</p>
+  {% endif %}
+</form>
+</div>
+<script type="application/json" id="branching-data">{{ branching_json | tojson }}</script>
+{% endblock %}

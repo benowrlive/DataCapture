@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Events — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Longitudinal Events</h1>
+<p class="hint">Define the visits/timepoints of your study (e.g. Baseline,
+Week 4, Month 6), then tick which instruments are collected at each event —
+like REDCap's event grid.</p>
+
+<div class="grid2">
+<div class="card">
+  <h2>Events</h2>
+  <table>
+    <tr><th>#</th><th>Event</th><th>Actions</th></tr>
+    {% for e in events %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ e.label }} <span class="pill">{{ e.name }}</span></td>
+      <td>
+        <form class="inlineform" method="post"
+              action="{{ url_for('events.event_action', pid=g.project.id, eid=e.id, action='up') }}">
+          <button class="btn btn-sm btn-ghost">↑</button></form>
+        <form class="inlineform" method="post"
+              action="{{ url_for('events.event_action', pid=g.project.id, eid=e.id, action='down') }}">
+          <button class="btn btn-sm btn-ghost">↓</button></form>
+        <form class="inlineform" method="post"
+              action="{{ url_for('events.event_action', pid=g.project.id, eid=e.id, action='delete') }}"
+              onsubmit="return confirm('Delete event {{ e.label }}?');">
+          <button class="btn btn-sm btn-danger">✕</button></form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <h2>Add event</h2>
+  <form method="post">
+    <input type="text" name="label" placeholder="e.g. Week 4 Follow-up" required>
+    <p><button class="btn" type="submit">Add event</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Instrument–event designation</h2>
+  <form method="post" action="{{ url_for('events.map_instruments', pid=g.project.id) }}">
+    <div class="table-wrap"><table>
+      <tr><th>Instrument</th>{% for e in events %}<th>{{ e.label }}</th>{% endfor %}</tr>
+      {% for i in instruments %}
+      <tr>
+        <td>{{ i.label }}</td>
+        {% for e in events %}
+        <td style="text-align:center">
+          <input type="checkbox" name="map_{{ e.id }}_{{ i.id }}" value="1"
+                 {{ 'checked' if (e.id, i.id) in mapping }}>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table></div>
+    <p><button class="btn" type="submit">Save designations</button></p>
+  </form>
+</div>
+</div>
+{% endblock %}

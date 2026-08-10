@@ -1,0 +1,34 @@
+{# Editable-combobox suggestion lists for faster form building.
+   Options adapt to the project's clinical specialty (see specialties.py);
+   inputs stay free-text — type anything, or pick a common option. #}
+
+{% macro instruments() %}
+<datalist id="instr_suggest">
+  {% for opt in instr_suggest_options %}<option value="{{ opt }}">
+  {% endfor %}
+</datalist>
+{% endmacro %}
+
+{% macro fields() %}
+<datalist id="field_suggest">
+  {% for opt in field_suggest_options %}<option value="{{ opt }}">
+  {% endfor %}
+</datalist>
+{% endmacro %}
+
+{% macro specialties() %}
+<datalist id="specialty_suggest">
+  {% for opt in clinical_specialties %}<option value="{{ opt }}">
+  {% endfor %}
+</datalist>
+{% endmacro %}
+
+{# Specialty + purpose shown as context pills. Needs `import ... with context`. #}
+{% macro project_context() %}
+{% if g.project.specialty or g.project.purpose %}
+<p style="margin:-.3rem 0 1rem;display:flex;gap:8px;flex-wrap:wrap">
+  {% if g.project.specialty %}<span class="pill">{{ g.project.specialty }}</span>{% endif %}
+  <span class="pill">{{ g.project.purpose.replace('_',' ')|title }}</span>
+</p>
+{% endif %}
+{% endmacro %}

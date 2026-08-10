@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "_icons.html" as ic %}
+{% block title %}First-run setup — DataCapture{% endblock %}
+{% block content_auth %}
+<div class="auth-brand">
+  <span class="logo">{{ ic.icon('brandmark', 24) }}</span> DataCapture
+</div>
+<div class="card">
+  <h1 style="margin-bottom:.4rem">Welcome 👋</h1>
+  <p class="hint" style="margin-top:0">Create the administrator account for this
+     installation. The administrator manages users and projects.</p>
+  {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label for="display_name">Your name</label>
+    <input type="text" id="display_name" name="display_name">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required minlength="3">
+    <label for="password">Password (min 8 characters)</label>
+    <input type="password" id="password" name="password" required minlength="8">
+    <p style="margin-top:1.2rem"><button class="btn" type="submit" style="width:100%;justify-content:center">Create administrator</button></p>
+  </form>
+</div>
+{% endblock %}

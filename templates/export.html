@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% import "_suggest.html" as sg with context %}
+{% block title %}Export &amp; Reports — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Data Exports, Reports, and Stats</h1>
+{{ sg.project_context() }}
+<div class="grid2">
+<div class="card">
+  <h2>Export data</h2>
+  <p><a class="btn" href="{{ url_for('importexport.export_data', pid=g.project.id) }}">
+     ⬇ CSV — raw codes</a></p>
+  <p><a class="btn btn-ghost"
+        href="{{ url_for('importexport.export_data', pid=g.project.id, labels=1) }}">
+     ⬇ CSV — choice labels</a></p>
+  <p class="hint">Raw-codes CSV re-imports cleanly through the Data Import Tool
+     and loads directly into SPSS, Stata, R (<code>read.csv</code>) or Python
+     (<code>pandas.read_csv</code>).</p>
+  <p><a class="btn btn-ghost"
+        href="{{ url_for('importexport.export_dictionary', pid=g.project.id) }}">
+     ⬇ Data dictionary CSV</a></p>
+</div>
+<div class="card">
+  <h2>Statistics software</h2>
+  <p><a class="btn" href="{{ url_for('importexport.export_sav', pid=g.project.id) }}">
+     ⬇ SPSS / jamovi file (.sav)</a></p>
+  <p class="hint">Opens directly in <strong>jamovi</strong>, SPSS, R
+     (<code>haven::read_sav</code>) and Stata — with your variable labels,
+     value labels and measure types (nominal / scale) already set. In jamovi:
+     <em>Open → this .sav file</em>, then run any analysis.</p>
+  <p><a class="btn btn-ghost" href="{{ url_for('analysis.analysis', pid=g.project.id) }}">
+     📈 Analyse here (built-in statistics)</a></p>
+  <p class="hint">Prefer to stay in DataCapture? The Analysis page runs
+     descriptives, t-tests, ANOVA, correlation, regression and chi-square
+     without leaving the app.</p>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+  <h2>View reports</h2>
+  <p><a class="btn btn-ghost" href="{{ url_for('reports.report', pid=g.project.id) }}">
+     📄 View all data (report table)</a></p>
+  {% for i in instruments %}
+  <p><a href="{{ url_for('reports.report', pid=g.project.id, instrument=i.id) }}">
+     → {{ i.label }} only</a></p>
+  {% endfor %}
+  <p><a class="btn btn-ghost" href="{{ url_for('reports.stats', pid=g.project.id) }}">
+     📊 Stats &amp; Charts</a></p>
+</div>
+</div>
+<div class="card">
+  <h2>Backups</h2>
+  <p>Everything lives in one file: <code>data/datacapture.db</code> in the app
+     folder. Copy it to a safe location regularly (external drive, encrypted
+     network share). To restore, stop the app and put the file back.</p>
+</div>
+{% endblock %}

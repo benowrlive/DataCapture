@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Records — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Record Status Dashboard</h1>
+<div class="legend">
+  <span><span class="dot dot-incomplete"></span> Incomplete</span>
+  <span><span class="dot dot-unverified"></span> Unverified</span>
+  <span><span class="dot dot-complete"></span> Complete</span>
+  <span><span class="dot dot-empty"></span> No data</span>
+</div>
+
+{% if g.role in ('admin', 'data_entry') %}
+<div class="card">
+  <form method="post" action="{{ url_for('records.add_record', pid=g.project.id) }}"
+        style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+    <strong>Add new record:</strong>
+    <input type="text" name="record_name" placeholder="auto-number if blank"
+           style="max-width:220px">
+    <button class="btn" type="submit">+ Add {{ g.project.record_label }}</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="table-wrap"><table>
+  <tr>
+    <th>{{ g.project.record_label }}</th>
+    {% if events %}
+      {% for e in events %}<th colspan="{{ instruments|length }}">{{ e.label }}</th>{% endfor %}
+    {% else %}
+      {% for i in instruments %}<th>{{ i.label }}</th>{% endfor %}
+    {% endif %}
+    <th></th>
+  </tr>
+  {% if events %}
+  <tr>
+    <th></th>
+    {% for e in events %}{% for i in instruments %}
+      <th class="hint" style="font-weight:400">{{ i.label }}</th>
+    {% endfor %}{% endfor %}
+    <th></th>
+  </tr>
+  {% endif %}
+  {% for r in records %}
+  <tr>
+    <td><strong>{{ r.record_name }}</strong></td>
+    {% if events %}
+      {% for e in events %}{% for i in instruments %}
+        <td style="text-align:center">
+        {% if (e.id, i.id) in mapping %}
+          {% set st = statuses.get((r.record_name, e.id, i.id)) %}
+          <a href="{{ url_for('records.entry', pid=g.project.id, record_name=r.record_name, iid=i.id, event=e.id) }}"
+             title="{{ i.label }} — {{ e.label }}">
+            <span class="dot dot-{{ st or 'empty' }}"></span></a>
+        {% else %}·{% endif %}
+        </td>
+      {% endfor %}{% endfor %}
+    {% else %}
+      {% for i in instruments %}
+      <td style="text-align:center">
+        {% set st = statuses.get((r.record_name, 0, i.id)) %}
+        <a href="{{ url_for('records.entry', pid=g.project.id, record_name=r.record_name, iid=i.id) }}"
+           title="{{ i.label }}"><span class="dot dot-{{ st or 'empty' }}"></span></a>
+      </td>
+      {% endfor %}
+    {% endif %}
+    <td>
+      {% if g.role == 'admin' %}
+      <form class="inlineform" method="post"
+            action="{{ url_for('records.delete_record', pid=g.project.id, record_name=r.record_name) }}"
+            onsubmit="return confirm('Delete record {{ r.record_name }} and ALL its data? This cannot be undone.');">
+        <button class="btn btn-sm btn-danger">Delete</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="99">No records yet.</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

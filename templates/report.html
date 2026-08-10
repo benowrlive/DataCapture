@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Report — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Data Report</h1>
+<form method="get" style="margin-bottom:1rem">
+  <select name="instrument" onchange="this.form.submit()">
+    <option value="0">All instruments</option>
+    {% for i in instruments %}
+    <option value="{{ i.id }}" {{ 'selected' if sel_instrument == i.id }}>{{ i.label }}</option>
+    {% endfor %}
+  </select>
+</form>
+<div class="table-wrap"><table>
+  <tr>
+    <th>{{ g.project.record_label }}</th>
+    {% if has_events %}<th>Event</th>{% endif %}
+    {% for f in fields %}<th title="{{ f.label }}">{{ f.name }}</th>{% endfor %}
+  </tr>
+  {% for r in rows %}
+  <tr>
+    <td><strong>{{ r.record }}</strong></td>
+    {% if has_events %}<td>{{ r.event }}</td>{% endif %}
+    {% for v in r.vals %}<td>{{ v }}</td>{% endfor %}
+  </tr>
+  {% else %}
+  <tr><td colspan="99">No data yet.</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_help.html" import tip %}
+{% import "_suggest.html" as sg with context %}
+{% block title %}Online Designer — {{ g.project.title }}{% endblock %}
+{% block content %}
+{{ sg.instruments() }}
+<h1>Online Designer {{ tip('Create one instrument for each form, then open it to add questions and fields.') }}</h1>
+<p class="hint">Instruments are your data collection forms. Click an instrument to
+edit its fields. Enable an instrument as a <strong>survey</strong> to get a public
+link respondents can fill in without logging in.</p>
+
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Instrument</th><th>Fields</th><th>Survey</th><th>Actions</th></tr>
+  {% for i in instruments %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td><a href="{{ url_for('designer.fields', pid=g.project.id, iid=i.id) }}">
+        <strong>{{ i.label }}</strong></a><br><span class="pill">{{ i.name }}</span></td>
+    <td>{{ i.n_fields }}</td>
+    <td>
+      {% if i.survey_enabled %}
+        <span class="badge badge-prod">ENABLED</span><br>
+        <input type="text" readonly value="{{ request.host_url }}s/{{ i.survey_token }}"
+               onclick="this.select()" style="max-width:260px;font-size:.8rem">
+        <form class="inlineform" method="post"
+              action="{{ url_for('designer.instrument_update', pid=g.project.id, iid=i.id) }}">
+          <input type="hidden" name="action" value="survey_disable">
+          <button class="btn btn-sm btn-ghost">Disable</button>
+        </form>
+      {% else %}
+        <details>
+          <summary class="pill" style="cursor:pointer">Enable as survey {{ tip('Creates a public link for this instrument. Anyone with the link can submit this form without logging in.') }}</summary>
+          <form method="post"
+                action="{{ url_for('designer.instrument_update', pid=g.project.id, iid=i.id) }}">
+            <input type="hidden" name="action" value="survey_enable">
+            <input type="text" name="survey_title" placeholder="Survey title (optional)">
+            <textarea name="survey_instructions" placeholder="Instructions shown to the respondent"></textarea>
+            <button class="btn btn-sm" type="submit">Enable survey</button>
+          </form>
+        </details>
+      {% endif %}
+    </td>
+    <td>
+      {% if g.role == 'admin' %}
+      <form class="inlineform" method="post"
+            action="{{ url_for('designer.instrument_update', pid=g.project.id, iid=i.id) }}">
+        <input type="hidden" name="action" value="up"><button class="btn btn-sm btn-ghost">↑</button>
+      </form>
+      <form class="inlineform" method="post"
+            action="{{ url_for('designer.instrument_update', pid=g.project.id, iid=i.id) }}">
+        <input type="hidden" name="action" value="down"><button class="btn btn-sm btn-ghost">↓</button>
+      </form>
+      <details style="display:inline-block">
+        <summary class="pill" style="cursor:pointer">rename</summary>
+        <form method="post"
+              action="{{ url_for('designer.instrument_update', pid=g.project.id, iid=i.id) }}">
+          <input type="hidden" name="action" value="rename">
+          <input type="text" name="label" value="{{ i.label }}" list="instr_suggest">
+          <button class="btn btn-sm" type="submit">Save</button>
+        </form>
+      </details>
+      <form class="inlineform" method="post"
+            action="{{ url_for('designer.instrument_update', pid=g.project.id, iid=i.id) }}"
+            onsubmit="return confirm('Delete instrument {{ i.label }} and ALL its fields?');">
+        <input type="hidden" name="action" value="delete">
+        <button class="btn btn-sm btn-danger">Delete</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+{% if g.role == 'admin' %}
+<div class="card">
+  <h2>Add instrument {{ tip('An instrument is a form, such as Demographics, Labs, Intake, or Follow-up.') }}</h2>
+  <form method="post" action="{{ url_for('designer.instrument_add', pid=g.project.id) }}">
+    <label>Instrument name {{ tip('Pick a common section from the list or type your own. DataCapture creates the internal form name automatically.') }}</label>
+    <input type="text" name="label" placeholder="e.g. Demographics, Lab Results, Follow-up"
+           list="instr_suggest" autocomplete="off" required>
+    <div class="hint">Start typing or click the field to choose a common section
+      (Demographics, Microbiology, Treatment – IV, Outcomes at Discharge…).</div>
+    <p><button class="btn" type="submit">Create instrument</button></p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

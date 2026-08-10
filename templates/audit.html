@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Audit Trail — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Audit Trail</h1>
+<p class="hint">Append-only log of every action in this project: logins are logged
+globally; data changes show old → new values.</p>
+<div class="table-wrap"><table>
+  <tr><th>Time (UTC)</th><th>User</th><th>Record</th><th>Action</th><th>Details</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td style="white-space:nowrap">{{ r.ts }}</td>
+    <td>{{ r.username }}</td>
+    <td>{{ r.record_name }}</td>
+    <td><span class="pill">{{ r.action }}</span></td>
+    <td style="max-width:520px;word-break:break-word">{{ r.details }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">No entries.</td></tr>
+  {% endfor %}
+</table></div>
+{% if pages > 1 %}
+<p>
+  {% for p in range(1, pages + 1) %}
+    {% if p == page %}<strong>{{ p }}</strong>{% else %}
+    <a href="{{ url_for('projects.audit_view', pid=g.project.id, page=p) }}">{{ p }}</a>{% endif %}
+  {% endfor %}
+</p>
+{% endif %}
+{% endblock %}

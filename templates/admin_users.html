@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}User accounts — DataCapture{% endblock %}
+{% block content %}
+<h1>User accounts</h1>
+<div class="grid2">
+<div class="card">
+  <div class="table-wrap"><table>
+    <tr><th>Username</th><th>Name</th><th>Admin</th><th>Status</th><th>Actions</th></tr>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.display_name }}</td>
+      <td>{{ '✔' if u.is_admin }}</td>
+      <td>{{ 'active' if u.active else 'disabled' }}</td>
+      <td>
+        {% if u.id != current_user.id %}
+        <form class="inlineform" method="post" action="{{ url_for('admin.toggle', uid=u.id) }}">
+          <button class="btn btn-sm btn-ghost" type="submit">
+            {{ 'Disable' if u.active else 'Enable' }}</button>
+        </form>
+        {% endif %}
+        <details style="display:inline-block">
+          <summary class="pill" style="cursor:pointer">reset password</summary>
+          <form method="post" action="{{ url_for('admin.reset_password', uid=u.id) }}">
+            <input type="password" name="password" placeholder="new password (≥8 chars)" minlength="8" required>
+            <button class="btn btn-sm" type="submit">Set</button>
+          </form>
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+  </table></div>
+</div>
+<div class="card">
+  <h2>Create user</h2>
+  <form method="post">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required minlength="3">
+    <label for="display_name">Display name</label>
+    <input type="text" id="display_name" name="display_name">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email">
+    <label for="password">Password (min 8 chars)</label>
+    <input type="password" id="password" name="password" required minlength="8">
+    <label class="checkline"><input type="checkbox" name="is_admin" value="1">
+      Global administrator</label>
+    <p><button class="btn" type="submit">Create user</button></p>
+  </form>
+  <p class="hint">Then open a project → User Rights to grant the user a role
+     in that project.</p>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "_icons.html" as ic %}
+{% block title %}My Projects — DataCapture{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
+  <h1 style="margin:0">My Projects</h1>
+  <a class="btn" href="{{ url_for('projects.new') }}" style="margin-left:auto">{{ ic.icon('plus',16) }} New Project</a>
+</div>
+{% if projects %}
+<div class="table-wrap"><table>
+  <tr><th>Project</th><th>Purpose</th><th>Status</th><th>Type</th>
+      <th>Records</th><th>My role</th></tr>
+  {% for p in projects %}
+  <tr>
+    <td><a href="{{ url_for('projects.setup', pid=p.id) }}"><strong>{{ p.title }}</strong></a></td>
+    <td class="muted">{{ p.purpose.replace('_',' ') }}</td>
+    <td><span class="badge {{ 'badge-prod' if p.status=='production' else 'badge-dev' }}">
+        {{ 'PRODUCTION' if p.status=='production' else 'DEVELOPMENT' }}</span></td>
+    <td>{{ 'Longitudinal' if p.is_longitudinal else 'Classic' }}</td>
+    <td>{{ counts.get(p.id, 0) }}</td>
+    <td>{{ ROLE_LABELS.get(p.role, p.role) }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% else %}
+<div class="card" style="text-align:center;padding:44px 20px">
+  <span class="stat-ico" style="margin:0 auto 14px">{{ ic.icon('folder',24) }}</span>
+  <h2 style="margin-top:0">No projects yet</h2>
+  <p class="muted">Create your first project to start collecting data.</p>
+  <a class="btn" href="{{ url_for('projects.new') }}" style="margin-top:6px">{{ ic.icon('plus',16) }} New Project</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% macro render_fields(fields, values, errors, effective_choices, readonly=False, file_ctx=None, original_name=None) %}
+{% for f in fields %}
+  {% if f.field_type == 'section_header' %}
+    <div class="section-header" data-field="{{ f.name }}">{{ f.label }}</div>
+  {% elif f.field_type == 'descriptive' %}
+    <div class="descriptive q-block" data-field="{{ f.name }}">{{ f.label }}</div>
+  {% elif f.name == 'record_id' %}
+    {# key field handled by caller #}
+  {% else %}
+  <div class="q-block" data-field="{{ f.name }}">
+    <label for="f_{{ f.name }}">{{ f.label }}
+      {% if f.required %}<span class="req">*</span>{% endif %}
+      <span class="pill">{{ f.name }}</span></label>
+    {% set v = values.get(f.name, '') %}
+    {% if f.field_type in ('dropdown',) %}
+      <select name="f_{{ f.name }}" id="f_{{ f.name }}" {{ 'disabled' if readonly }}>
+        <option value="">-- select --</option>
+        {% for code, label in effective_choices(f) %}
+        <option value="{{ code }}" {{ 'selected' if v == code }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    {% elif f.field_type in ('radio', 'yesno', 'truefalse') %}
+      {% for code, label in effective_choices(f) %}
+      <label class="checkline"><input type="radio" name="f_{{ f.name }}"
+        value="{{ code }}" {{ 'checked' if v == code }} {{ 'disabled' if readonly }}>
+        {{ label }}</label>
+      {% endfor %}
+    {% elif f.field_type == 'checkbox' %}
+      {% set checked = v.split(',') | map('trim') | list %}
+      {% for code, label in effective_choices(f) %}
+      <label class="checkline"><input type="checkbox" name="f_{{ f.name }}"
+        value="{{ code }}" {{ 'checked' if code in checked }} {{ 'disabled' if readonly }}>
+        {{ label }}</label>
+      {% endfor %}
+    {% elif f.field_type == 'notes' %}
+      <textarea name="f_{{ f.name }}" id="f_{{ f.name }}" {{ 'readonly' if readonly }}>{{ v }}</textarea>
+    {% elif f.field_type == 'date' %}
+      <input type="date" name="f_{{ f.name }}" id="f_{{ f.name }}" value="{{ v }}"
+             {{ 'readonly' if readonly }}>
+    {% elif f.field_type == 'time' %}
+      <input type="time" name="f_{{ f.name }}" id="f_{{ f.name }}" value="{{ v }}"
+             {{ 'readonly' if readonly }}>
+    {% elif f.field_type == 'slider' %}
+      <input type="range" name="f_{{ f.name }}" id="f_{{ f.name }}" min="0" max="100"
+             value="{{ v or 50 }}" {{ 'disabled' if readonly }}
+             oninput="this.nextElementSibling.textContent=this.value">
+      <span class="pill">{{ v or '—' }}</span>
+    {% elif f.field_type == 'file' %}
+      {% if v and file_ctx %}
+        <div class="file-current">📎 <a target="_blank" rel="noopener"
+          href="{{ url_for('records.download_file', pid=file_ctx.pid, record_name=file_ctx.record, field_name=f.name, event=file_ctx.event) }}">{{ original_name(v) if original_name else v }}</a></div>
+        {% if not readonly %}<label class="checkline"><input type="checkbox"
+          name="f_{{ f.name }}__remove" value="1"> Remove this file</label>{% endif %}
+      {% endif %}
+      {% if not readonly %}
+        <input type="file" name="f_{{ f.name }}" id="f_{{ f.name }}"
+               accept="image/*,.pdf,.doc,.docx,.rtf,.odt,.txt,.csv,.xls,.xlsx,.ods">
+        <div class="hint">Images, PDF, Word, text, or spreadsheet — up to 32&nbsp;MB.</div>
+      {% endif %}
+    {% else %}
+      <input type="text" name="f_{{ f.name }}" id="f_{{ f.name }}" value="{{ v }}"
+             {{ 'readonly' if readonly }}
+             {% if f.field_type == 'integer' or f.validation == 'integer' %}inputmode="numeric"{% endif %}>
+    {% endif %}
+    {% if f.field_note %}<div class="hint">{{ f.field_note }}</div>{% endif %}
+    {% if errors.get(f.name) %}<div class="field-error">{{ errors[f.name] }}</div>{% endif %}
+  </div>
+  {% endif %}
+{% endfor %}
+{% endmacro %}

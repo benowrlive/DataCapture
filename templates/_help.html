@@ -1,0 +1,6 @@
+{% macro tip(text) -%}
+<span class="help-tip" tabindex="0" role="button" aria-label="{{ text }}">
+  ?
+  <span class="help-bubble">{{ text }}</span>
+</span>
+{%- endmacro %}

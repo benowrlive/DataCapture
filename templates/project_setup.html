@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% import "_icons.html" as ic %}
+{% import "_suggest.html" as sg with context %}
+{% block title %}{{ g.project.title }} — Dashboard{% endblock %}
+{% block content %}
+{{ sg.specialties() }}
+<h1>Dashboard</h1>
+{{ sg.project_context() }}
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <span class="stat-ico">{{ ic.icon('database', 22) }}</span>
+    <div><div class="stat-num">{{ n_records }}</div><div class="stat-label">Records</div></div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-ico violet">{{ ic.icon('file', 22) }}</span>
+    <div><div class="stat-num">{{ instruments|length }}</div><div class="stat-label">Instruments</div></div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-ico green">{{ ic.icon('list', 22) }}</span>
+    <div><div class="stat-num">{{ n_fields }}</div><div class="stat-label">Fields</div></div>
+  </div>
+  {% if g.project.is_longitudinal %}
+  <div class="stat-card">
+    <span class="stat-ico amber">{{ ic.icon('calendar', 22) }}</span>
+    <div><div class="stat-num">{{ events|length }}</div><div class="stat-label">Events</div></div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Project status</h2>
+    {% if g.project.status == 'dev' %}
+      <p><span class="badge badge-dev">DEVELOPMENT</span></p>
+      <p class="muted">Design freely and enter practice records. When your design is
+         final, move to Production — structural changes are then locked to protect
+         your collected data.</p>
+      {% if g.role == 'admin' %}
+      <form method="post" action="{{ url_for('projects.change_status', pid=g.project.id) }}"
+            onsubmit="return confirm('Move to PRODUCTION? Design will be locked.');">
+        <input type="hidden" name="target" value="production">
+        <button class="btn" type="submit">{{ ic.icon('check', 16) }} Move to Production</button>
+      </form>
+      {% endif %}
+    {% else %}
+      <p><span class="badge badge-prod">PRODUCTION</span></p>
+      <p class="muted">Live data collection. Design is locked to protect collected data.</p>
+      {% if current_user.is_admin %}
+      <form method="post" action="{{ url_for('projects.change_status', pid=g.project.id) }}"
+            onsubmit="return confirm('Revert to Development mode?');">
+        <input type="hidden" name="target" value="dev">
+        <button class="btn btn-ghost" type="submit">Revert to Development (admin)</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Quick actions</h2>
+    <p style="display:flex;flex-wrap:wrap;gap:9px">
+      <a class="btn btn-ghost" href="{{ url_for('designer.designer', pid=g.project.id) }}">{{ ic.icon('designer',16) }} Design forms</a>
+      {% if g.project.is_longitudinal %}
+      <a class="btn btn-ghost" href="{{ url_for('events.events', pid=g.project.id) }}">{{ ic.icon('calendar',16) }} Events</a>
+      {% endif %}
+      <a class="btn btn-ghost" href="{{ url_for('records.dashboard', pid=g.project.id) }}">{{ ic.icon('records',16) }} Records</a>
+      <a class="btn btn-ghost" href="{{ url_for('importexport.import_home', pid=g.project.id) }}">{{ ic.icon('import',16) }} Import data</a>
+      <a class="btn btn-ghost" href="{{ url_for('importexport.export_home', pid=g.project.id) }}">{{ ic.icon('export',16) }} Export</a>
+    </p>
+    <h2>Team</h2>
+    <p style="display:flex;flex-direction:column;gap:6px">
+      {% for m in members %}
+      <span>{{ m.display_name or m.username }}
+        <span class="pill">{{ ROLE_LABELS.get(m.role, m.role) }}</span></span>
+      {% endfor %}
+    </p>
+    {% if g.role == 'admin' %}
+    <a href="{{ url_for('projects.users', pid=g.project.id) }}">Manage user rights →</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if g.role == 'admin' and g.project.status == 'dev' %}
+<div class="card">
+  <h2>Project settings</h2>
+  <form method="post" action="{{ url_for('projects.settings', pid=g.project.id) }}">
+    <label for="title">Title</label>
+    <input type="text" id="title" name="title" value="{{ g.project.title }}">
+    <label for="specialty">Specialty / Department</label>
+    <input type="text" id="specialty" name="specialty" list="specialty_suggest"
+           autocomplete="off" value="{{ g.project.specialty }}">
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes">{{ g.project.notes }}</textarea>
+    <label for="record_label">Record label</label>
+    <input type="text" id="record_label" name="record_label" value="{{ g.project.record_label }}">
+    <label class="checkline"><input type="checkbox" name="is_longitudinal" value="1"
+      {{ 'checked' if g.project.is_longitudinal }}> Longitudinal project</label>
+    <p style="margin-top:1rem"><button class="btn" type="submit">Save settings</button></p>
+  </form>
+</div>
+{% endif %}
+
+{% if g.role == 'admin' %}
+<div class="card danger-zone">
+  <h2 style="color:var(--red);margin-top:0">Danger zone</h2>
+  <p class="muted">Deleting this project permanently removes all of its
+    instruments, fields, events, records, uploaded files and data. This
+    <strong>cannot be undone</strong>.</p>
+  <form method="post" action="{{ url_for('projects.delete_project', pid=g.project.id) }}"
+        onsubmit="return confirm('Permanently delete the project &quot;{{ g.project.title }}&quot; and ALL of its data? This cannot be undone.');">
+    <button class="btn btn-danger" type="submit">{{ ic.icon('audit', 15) }} Delete this project</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

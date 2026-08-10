@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% import "_icons.html" as ic %}
+{% block title %}Analysis — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Analysis</h1>
+{% if stats_missing %}
+<div class="card">
+  <h2 style="margin-top:0">Statistics libraries are still installing</h2>
+  <p>The analysis features use a few Python libraries (pandas, scipy,
+     statsmodels). They install automatically the next time you fully restart
+     DataCapture (double-click the DataCapture icon). If this message persists,
+     install manually from the DataCapture folder with:</p>
+  <p><code>.venv\Scripts\python -m pip install -r requirements.txt</code></p>
+  <p class="hint">You can keep collecting and exporting data normally in the
+     meantime — only this Analysis page needs them.</p>
+</div>
+{% else %}
+<p class="hint">Point-and-click statistics, computed right here in DataCapture
+  (Python — no internet, no extra software). {{ n_rows }} row(s) of data.
+  Start with <strong>Table One</strong> for a publication-ready baseline table;
+  every result has <strong>Copy for Word</strong> and <strong>CSV</strong> buttons.
+  For SPSS / jamovi / R, use the <a href="{{ url_for('importexport.export_home', pid=g.project.id) }}">Export</a> page.</p>
+
+<div class="card">
+<form method="get" id="analysis-form">
+  <label for="type">Analysis</label>
+  <select name="type" id="type" onchange="acToggle()">
+    {% for key, name in analyses %}
+    <option value="{{ key }}" {{ 'selected' if atype == key }}>{{ name }}</option>
+    {% endfor %}
+  </select>
+
+  <div class="ac-field" data-for="vars">
+    <label for="vars">Variables <span class="hint">(hold Ctrl / Cmd to pick several)</span></label>
+    <select name="vars" id="vars" multiple size="6" style="max-width:560px">
+      {% for v in variables %}
+      <option value="{{ v.name }}" {{ 'selected' if v.name in form.vars }}>{{ v.label }} · {{ v.name }} ({{ v.role }})</option>
+      {% endfor %}
+    </select>
+    <div class="hint" id="vars-hint">Table One: the variables to summarise. Summary: leave empty to include all.</div>
+  </div>
+
+  <div class="ac-field" data-for="dep">
+    <label for="dep" id="dep-label">Outcome / variable</label>
+    <select name="dep" id="dep">
+      <option value="">— choose —</option>
+      {% for v in variables %}
+      <option value="{{ v.name }}" {{ 'selected' if form.dep == v.name }}>{{ v.label }} · {{ v.name }} ({{ v.role }})</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="ac-field" data-for="group">
+    <label for="group" id="group-label">Grouping / second variable</label>
+    <select name="group" id="group">
+      <option value="">— choose —</option>
+      {% for v in variables %}
+      <option value="{{ v.name }}" {{ 'selected' if form.group == v.name }}>{{ v.label }} · {{ v.name }} ({{ v.role }})</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="ac-field" data-for="preds">
+    <label for="preds">Predictors <span class="hint">(hold Ctrl / Cmd to pick several)</span></label>
+    <select name="preds" id="preds" multiple size="6" style="max-width:560px">
+      {% for v in variables %}
+      <option value="{{ v.name }}" {{ 'selected' if v.name in form.preds }}>{{ v.label }} · {{ v.name }} ({{ v.role }})</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <p style="margin-top:1rem"><button class="btn" type="submit">Run analysis</button></p>
+</form>
+</div>
+
+{% if not variables %}
+<div class="card">No numeric or categorical fields to analyse yet. Add some fields
+  and enter data first.</div>
+{% elif result and result.error %}
+<div class="error-box">{{ result.error }}</div>
+{% elif result and result.tables %}
+  {% for t in result.tables %}
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem">
+      <h2 style="margin:0;flex:1 1 auto">{{ t.title }}</h2>
+      <button type="button" class="btn btn-sm btn-ghost" data-copy>{{ ic.icon('file', 14) }} Copy for Word</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-csv>{{ ic.icon('export', 14) }} CSV</button>
+    </div>
+    <div class="table-wrap"><table>
+      <tr>{% for c in t.columns %}<th>{{ c }}</th>{% endfor %}</tr>
+      {% for row in t.rows %}
+      <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </table></div>
+    {% if t.note %}<div class="hint" style="margin-top:.5rem">{{ t.note }}</div>{% endif %}
+  </div>
+  {% endfor %}
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show only the inputs each analysis needs.
+var AC_USES = {
+  tableone:     ["vars", "group"],
+  summary:      ["vars"],
+  descriptives: ["vars"],
+  frequencies:  ["dep"],
+  ttest:        ["dep", "group"],
+  anova:        ["dep", "group"],
+  correlation:  ["vars"],
+  linear:       ["dep", "preds"],
+  logistic:     ["dep", "preds"],
+  contingency:  ["dep", "group"]
+};
+var AC_LABELS = {
+  tableone:     { group: "Grouping variable (compare across, e.g. Outcome)" },
+  frequencies:  { dep: "Variable" },
+  ttest:        { dep: "Outcome (number)", group: "Grouping variable (2 groups)" },
+  anova:        { dep: "Outcome (number)", group: "Grouping variable" },
+  linear:       { dep: "Outcome (number)" },
+  logistic:     { dep: "Outcome (binary)" },
+  contingency:  { dep: "Rows variable", group: "Columns variable" }
+};
+function acToggle() {
+  var t = document.getElementById("type").value;
+  var uses = AC_USES[t] || [];
+  document.querySelectorAll(".ac-field").forEach(function (el) {
+    el.style.display = uses.indexOf(el.dataset.for) >= 0 ? "" : "none";
+  });
+  var labels = AC_LABELS[t] || {};
+  var dl = document.getElementById("dep-label");
+  var gl = document.getElementById("group-label");
+  if (dl) dl.textContent = labels.dep || "Outcome / variable";
+  if (gl) gl.textContent = labels.group || "Grouping / second variable";
+  var vh = document.getElementById("vars-hint");
+  if (vh) vh.style.display = (t === "tableone" || t === "summary") ? "" : "none";
+}
+document.addEventListener("DOMContentLoaded", acToggle);
+
+// ---- Copy-for-Word / CSV export for every result table --------------------
+function acMatrix(table) {
+  return Array.from(table.rows).map(function (tr) {
+    return Array.from(tr.cells).map(function (c) { return c.textContent.trim(); });
+  });
+}
+function acCSV(m) {
+  return m.map(function (r) {
+    return r.map(function (c) {
+      return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+    }).join(",");
+  }).join("\n");
+}
+function acHTML(table) {
+  var esc = function (s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
+  var out = '<table border="1" cellspacing="0" cellpadding="4" ' +
+            'style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif">';
+  Array.from(table.rows).forEach(function (tr) {
+    out += "<tr>";
+    Array.from(tr.cells).forEach(function (c) {
+      var tag = c.tagName.toLowerCase() === "th" ? "th" : "td";
+      out += "<" + tag + ">" + esc(c.textContent.trim()) + "</" + tag + ">";
+    });
+    out += "</tr>";
+  });
+  return out + "</table>";
+}
+function acSlug(s) {
+  return (s || "table").toLowerCase().replace(/[^a-z0-9]+/g, "_")
+         .replace(/^_|_$/g, "").slice(0, 40) || "table";
+}
+document.addEventListener("click", function (ev) {
+  var btn = ev.target.closest("[data-copy],[data-csv]");
+  if (!btn) return;
+  var card = btn.closest(".card");
+  var table = card && card.querySelector("table");
+  if (!table) return;
+  var title = (card.querySelector("h2") || {}).textContent || "table";
+  var flash = function (msg) {
+    var o = btn.getAttribute("data-label") || btn.textContent;
+    if (!btn.hasAttribute("data-label")) btn.setAttribute("data-label", o);
+    btn.textContent = msg;
+    setTimeout(function () { btn.textContent = btn.getAttribute("data-label"); }, 1300);
+  };
+  if (btn.hasAttribute("data-csv")) {
+    var blob = new Blob([acCSV(acMatrix(table))], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = acSlug(title) + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    flash("Downloaded ✓");
+    return;
+  }
+  var tsv = acMatrix(table).map(function (r) { return r.join("\t"); }).join("\n");
+  if (navigator.clipboard && window.ClipboardItem) {
+    var item = new ClipboardItem({
+      "text/html": new Blob([acHTML(table)], { type: "text/html" }),
+      "text/plain": new Blob([tsv], { type: "text/plain" })
+    });
+    navigator.clipboard.write([item]).then(function () { flash("Copied ✓"); })
+      .catch(function () { navigator.clipboard.writeText(tsv).then(function () { flash("Copied ✓"); }); });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(tsv).then(function () { flash("Copied ✓"); });
+  }
+});
+</script>
+{% endblock %}

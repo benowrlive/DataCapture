@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Stats &amp; Charts — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Stats &amp; Charts</h1>
+<p class="hint">{{ n_records }} record(s). Descriptive statistics for every field;
+missing = records without a value for the field.</p>
+<div class="statcard-grid">
+  {% for c in cards %}
+  <div class="card">
+    <strong>{{ c.field.label }}</strong> <span class="pill">{{ c.field.name }}</span>
+    <div class="hint">{{ c.field.instrument_label }} · n = {{ c.n }} ·
+      missing = {{ c.missing }}</div>
+    {% if c.numeric %}
+      <table style="margin-top:.5rem">
+        <tr><th>Min</th><th>Median</th><th>Mean</th><th>Max</th></tr>
+        <tr><td>{{ c.numeric.min }}</td><td>{{ c.numeric.median }}</td>
+            <td>{{ c.numeric.mean }}</td><td>{{ c.numeric.max }}</td></tr>
+      </table>
+    {% elif c.bars %}
+      {% for b in c.bars %}
+      <div style="margin-top:.4rem">
+        <div style="display:flex;justify-content:space-between">
+          <span>{{ b.label }}</span><span class="muted">{{ b.count }} ({{ b.pct }}%)</span>
+        </div>
+        <div class="statbar"><div style="width:{{ b.pct }}%"></div></div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="hint" style="margin-top:.5rem">Free-text field — see the
+        <a href="{{ url_for('reports.report', pid=g.project.id) }}">data report</a>.</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "_icons.html" as ic %}
+{% import "_suggest.html" as sg with context %}
+{% block title %}New Project — DataCapture{% endblock %}
+{% block content %}
+{{ sg.specialties() }}
+<h1>Create a new project</h1>
+<div class="card">
+<form method="post">
+  <label for="title">Project title *</label>
+  <input type="text" id="title" name="title" required>
+
+  <label for="purpose">Purpose</label>
+  <select id="purpose" name="purpose">
+    {% for p in purposes %}<option value="{{ p }}">{{ p.replace('_',' ')|title }}</option>{% endfor %}
+  </select>
+  <div class="hint">A label describing why the data is collected (it doesn't change how the project works):
+    <ul style="margin:.4rem 0 0; padding-left:1.1rem">
+      <li><strong>Research</strong> — a formal study meant to produce generalizable,
+        publishable knowledge (clinical trials, cohort or case studies).</li>
+      <li><strong>Quality Improvement</strong> — measuring and improving care or
+        processes within your own hospital/department (audits, QI cycles).</li>
+      <li><strong>Operational Support</strong> — day-to-day clinical operations:
+        a service registry, patient tracking, or reporting.</li>
+      <li><strong>Practice</strong> — learning the tool, teaching, or testing —
+        not real study data.</li>
+    </ul>
+  </div>
+
+  <label for="specialty">Specialty / Department</label>
+  <input type="text" id="specialty" name="specialty" list="specialty_suggest"
+         autocomplete="off" placeholder="e.g. Infectious Diseases, Cardiology, Nephrology">
+  <div class="hint">Sets the clinical context for this project. Start typing or click
+    to pick your CMC department. Choosing one also tailors the form-building
+    suggestions (instrument sections and field labels) to that specialty.</div>
+
+  <label for="notes">Notes / objective</label>
+  <textarea id="notes" name="notes" placeholder="Short description of the study"></textarea>
+
+  <label for="record_label">Record label</label>
+  <input type="text" id="record_label" name="record_label" value="Record ID">
+  <div class="hint">What one record represents, e.g. “Participant ID”, “Patient ID”.</div>
+
+  <label class="checkline"><input type="checkbox" name="is_longitudinal" value="1">
+    Longitudinal project (repeated visits/events per record)</label>
+
+  <p style="margin-top:1.2rem"><button class="btn" type="submit">{{ ic.icon('plus', 16) }} Create project</button></p>
+</form>
+</div>
+{% endblock %}

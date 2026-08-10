@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Codebook — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Codebook (Data Dictionary)</h1>
+<p><a class="btn btn-ghost"
+      href="{{ url_for('importexport.export_dictionary', pid=g.project.id) }}">
+   ⬇ Download dictionary CSV</a></p>
+<div class="table-wrap"><table>
+  <tr><th>Instrument</th><th>Variable</th><th>Label</th><th>Type</th>
+      <th>Choices / validation</th><th>Attributes</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.instrument_label }}</td>
+    <td><code>{{ r.name }}</code></td>
+    <td>{{ r.label }}</td>
+    <td>{{ r.field_type }}</td>
+    <td>
+      {% if r.choices %}
+        {% for code, label in parse_choices(r.choices) %}
+          <div><code>{{ code }}</code> {{ label }}</div>
+        {% endfor %}
+      {% endif %}
+      {% if r.validation %}<div class="hint">validation: {{ r.validation }}</div>{% endif %}
+      {% if r.min_value or r.max_value %}
+        <div class="hint">range: {{ r.min_value or '−∞' }} … {{ r.max_value or '∞' }}</div>{% endif %}
+    </td>
+    <td>
+      {% if r.required %}<span class="pill">required</span>{% endif %}
+      {% if r.identifier %}<span class="pill">identifier</span>{% endif %}
+      {% if r.branching_logic %}<div class="hint">show if: <code>{{ r.branching_logic }}</code></div>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_help.html" import tip %}
+{% import "_suggest.html" as sg with context %}
+{% block title %}{{ inst.label }} — fields{% endblock %}
+{% block content %}
+{{ sg.fields() }}
+<p><a href="{{ url_for('designer.designer', pid=g.project.id) }}">← All instruments</a></p>
+<h1>{{ inst.label }} <span class="pill">{{ inst.name }}</span> {{ tip('Add one field for each question or data point you need to collect on this form.') }}</h1>
+
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Variable</th><th>Label</th><th>Type</th><th>Flags</th><th>Actions</th></tr>
+  {% for f in fields %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td><code>{{ f.name }}</code></td>
+    <td>{{ f.label }}
+        {% if f.choices %}<div class="hint">{{ f.choices }}</div>{% endif %}
+        {% if f.branching_logic %}<div class="hint">Show if: <code>{{ f.branching_logic }}</code></div>{% endif %}</td>
+    <td>{{ f.field_type }}{% if f.validation %} ({{ f.validation }}){% endif %}</td>
+    <td>
+      {% if f.required %}<span class="pill">required</span>{% endif %}
+      {% if f.identifier %}<span class="pill">identifier</span>{% endif %}
+    </td>
+    <td>
+      {% if g.role == 'admin' and f.name != 'record_id' %}
+      <a class="btn btn-sm btn-ghost"
+         href="{{ url_for('designer.fields', pid=g.project.id, iid=inst.id, edit=f.id) }}#editor">Edit</a>
+      <form class="inlineform" method="post"
+            action="{{ url_for('designer.field_action', pid=g.project.id, iid=inst.id, fid=f.id, action='up') }}">
+        <button class="btn btn-sm btn-ghost">↑</button></form>
+      <form class="inlineform" method="post"
+            action="{{ url_for('designer.field_action', pid=g.project.id, iid=inst.id, fid=f.id, action='down') }}">
+        <button class="btn btn-sm btn-ghost">↓</button></form>
+      <form class="inlineform" method="post"
+            action="{{ url_for('designer.field_action', pid=g.project.id, iid=inst.id, fid=f.id, action='delete') }}"
+            onsubmit="return confirm('Delete field {{ f.name }}?');">
+        <button class="btn btn-sm btn-danger">✕</button></form>
+      {% elif f.name == 'record_id' %}<span class="pill">key field</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+{% if g.role == 'admin' %}
+<div class="card" id="editor">
+  <h2>{{ 'Edit field' if edit_field else 'Add field' }}</h2>
+  <form method="post" action="{{ url_for('designer.field_save', pid=g.project.id, iid=inst.id) }}">
+    {% if edit_field %}<input type="hidden" name="field_id" value="{{ edit_field.id }}">{% endif %}
+    <div class="grid2">
+      <div>
+        <label>Field label * {{ tip('The question or prompt people see on the form. Pick a common one from the list or type your own.') }}</label>
+        <input type="text" name="label" required list="field_suggest" autocomplete="off"
+               value="{{ edit_field.label if edit_field else '' }}">
+        <label>Variable name {{ tip('The column name used in exports, imports, and branching logic. Leave blank to auto-create one from the label.') }}</label>
+        <input type="text" name="name" placeholder="auto-generated from label"
+               value="{{ edit_field.name if edit_field else '' }}">
+        <div class="hint">Lowercase letters, numbers, underscores. Used in exports,
+        imports and branching logic. Don't change after data collection begins.</div>
+        <label>Field type {{ tip('Choose how the answer should be collected: text, number, date, dropdown, checkbox, and so on.') }}</label>
+        <select name="field_type" id="field_type_select">
+          {% for t, tl in field_types %}
+          <option value="{{ t }}" {{ 'selected' if edit_field and edit_field.field_type == t }}>{{ tl }}</option>
+          {% endfor %}
+        </select>
+        <div id="choices_row">
+          <label>Choices {{ tip('For dropdown, radio, and checkbox fields. Enter each option as code, label and separate choices with a vertical bar.') }}</label>
+          <textarea name="choices" placeholder="1, Mild | 2, Moderate | 3, Severe">{{ edit_field.choices if edit_field else '' }}</textarea>
+          <div class="hint">Imports must use the numeric <em>code</em>, not the label.</div>
+        </div>
+        <div id="validation_row">
+          <label>Text validation {{ tip('Optional rule for text boxes. Use this when a text field must behave like an email, date, phone, integer, or number.') }}</label>
+          <select name="validation">
+            {% for v in ['', 'integer', 'number', 'date', 'email', 'phone'] %}
+            <option value="{{ v }}" {{ 'selected' if edit_field and edit_field.validation == v }}>{{ v or '(none)' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Minimum {{ tip('Optional lowest allowed value. Works best with number, integer, slider, and date fields.') }}</label>
+        <input type="text" name="min_value" value="{{ edit_field.min_value if edit_field else '' }}">
+        <label>Maximum {{ tip('Optional highest allowed value. Works best with number, integer, slider, and date fields.') }}</label>
+        <input type="text" name="max_value" value="{{ edit_field.max_value if edit_field else '' }}">
+        <label>Field note {{ tip('Small helper text shown under the question, such as units, examples, or collection instructions.') }}</label>
+        <input type="text" name="field_note" value="{{ edit_field.field_note if edit_field else '' }}">
+        <label>Branching logic {{ tip('Optional rule that hides this field unless the rule is true. Example: [sex] = ''2'' or [age] >= ''18''.') }}</label>
+        <input type="text" name="branching_logic"
+               placeholder="[sex] = '1' and [age] >= '18'"
+               value="{{ edit_field.branching_logic if edit_field else '' }}">
+        <div class="hint">Operators: = &lt;&gt; &gt; &gt;= &lt; &lt;= and or ( ) ·
+          checkbox: [field(code)] = '1'</div>
+        <label class="checkline"><input type="checkbox" name="required" value="1"
+          {{ 'checked' if edit_field and edit_field.required }}> Required {{ tip('Requires an answer before the form can be saved, unless branching logic hides the field.') }}</label>
+        <label class="checkline"><input type="checkbox" name="identifier" value="1"
+          {{ 'checked' if edit_field and edit_field.identifier }}> Identifier {{ tip('Mark fields that can identify a person, such as name, MRN, email, phone, or address.') }}</label>
+      </div>
+    </div>
+    <p><button class="btn" type="submit">{{ 'Save changes' if edit_field else 'Add field' }}</button>
+    {% if edit_field %}<a class="btn btn-ghost" href="{{ url_for('designer.fields', pid=g.project.id, iid=inst.id) }}">Cancel</a>{% endif %}</p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

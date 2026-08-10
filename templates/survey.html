@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ inst.survey_title or inst.label }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% from "_form_fields.html" import render_fields %}
+<div class="survey-shell">
+  <div class="survey-head">
+    <div style="font-size:.8rem;opacity:.85;font-weight:600;letter-spacing:.03em;margin-bottom:6px">
+      {{ project.title }}</div>
+    <h1>{{ inst.survey_title or inst.label }}</h1>
+  </div>
+  <div class="card" style="border-radius:0 0 10px 10px">
+    {% if inst.survey_instructions %}
+    <p class="muted">{{ inst.survey_instructions }}</p>{% endif %}
+    {% if errors %}
+    <div class="error-box">Please fix the highlighted
+      field{{ 's' if errors|length > 1 }} below and submit again.</div>
+    {% endif %}
+    <form method="post" id="entry-form" enctype="multipart/form-data">
+      {{ render_fields(fields, values, errors, effective_choices) }}
+      <p><button class="btn" type="submit">Submit</button></p>
+    </form>
+  </div>
+  <footer>Powered by DataCapture</footer>
+</div>
+<script type="application/json" id="branching-data">{{ branching_json | tojson }}</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

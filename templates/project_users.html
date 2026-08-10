@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}User Rights — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>User Rights</h1>
+<div class="card">
+  <p class="hint">Project Admin: full control · Data Entry: create/edit records and
+  import · Read Only: view and export only. Global administrators always have
+  admin access. Assign levels carefully so no one deletes or changes data
+  accidentally.</p>
+  <div class="table-wrap"><table>
+    <tr><th>User</th><th>Role</th><th></th></tr>
+    {% for m in members %}
+    <tr>
+      <td>{{ m.display_name or m.username }} <span class="pill">{{ m.username }}</span></td>
+      <td>{{ ROLE_LABELS.get(m.role, m.role) }}</td>
+      <td>
+        <form class="inlineform" method="post"
+              action="{{ url_for('projects.remove_user', pid=g.project.id, uid=m.id) }}"
+              onsubmit="return confirm('Remove {{ m.username }} from this project?');">
+          <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table></div>
+</div>
+<div class="card">
+  <h2>Add user to project</h2>
+  {% if others %}
+  <form method="post">
+    <label for="user_id">User</label>
+    <select name="user_id" id="user_id">
+      {% for u in others %}<option value="{{ u.id }}">{{ u.display_name or u.username }} ({{ u.username }})</option>{% endfor %}
+    </select>
+    <label for="role">Role</label>
+    <select name="role" id="role">
+      {% for r in roles %}<option value="{{ r }}">{{ ROLE_LABELS[r] }}</option>{% endfor %}
+    </select>
+    <p><button class="btn" type="submit">Grant access</button></p>
+  </form>
+  {% else %}
+  <p>All existing accounts are already members.
+     {% if current_user.is_admin %}<a href="{{ url_for('admin.users') }}">Create a new user account →</a>{% endif %}</p>
+  {% endif %}
+</div>
+{% endblock %}

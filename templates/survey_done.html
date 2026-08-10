@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thank you</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="survey-shell">
+  <div class="card" style="text-align:center;padding:3rem 1rem">
+    <h1>✅ Thank you!</h1>
+    <p>Your response to <strong>{{ inst.survey_title or inst.label }}</strong>
+       has been recorded.</p>
+    <p class="muted">You may now close this window.</p>
+  </div>
+  <footer>Powered by DataCapture</footer>
+</div>
+</body>
+</html>

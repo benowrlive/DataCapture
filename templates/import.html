@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Data Import Tool — {{ g.project.title }}{% endblock %}
+{% block content %}
+<h1>Data Import Tool</h1>
+
+{% if stage == 'upload' %}
+<div class="card">
+  <h2>Step 1 — Download the Import Template</h2>
+  <p><a class="btn btn-ghost"
+        href="{{ url_for('importexport.template', pid=g.project.id) }}">
+     ⬇ Download Import Template (records as rows)</a></p>
+  <ul class="hint">
+    <li>Add new records by putting a new value in the <code>record_id</code>
+        column; use an existing value to add/overwrite data for that record —
+        double-check IDs, overwritten data cannot be retrieved.</li>
+    <li>Don't change the variable names in the header row.</li>
+    <li>For dropdown / radio / checkbox fields upload the numeric
+        <strong>code</strong>, not the text label
+        (checkbox: comma-separated codes, e.g. <code>1,3</code>).</li>
+    {% if g.project.is_longitudinal %}
+    <li>The second column <code>event_name</code> must contain one of your
+        event names; one row per record per event.</li>
+    {% endif %}
+    <li>Blank cells are ignored — you can import a few variables at a time.</li>
+    <li>Empty rows are skipped automatically.</li>
+  </ul>
+</div>
+<div class="card">
+  <h2>Step 2 — Upload your completed CSV</h2>
+  <form method="post" action="{{ url_for('importexport.upload', pid=g.project.id) }}"
+        enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv" required>
+    <p><button class="btn" type="submit">Upload file</button></p>
+  </form>
+</div>
+
+{% elif stage == 'errors' %}
+<div class="error-box">
+  Errors were detected in the import file that prevented it from being loaded.
+  There {{ 'is 1 error' if errors|length == 1 else 'are ' ~ errors|length ~ ' errors' }}
+  in this dataset. Please correct the errors and upload the file again.
+</div>
+<div class="table-wrap"><table>
+  <tr><th>Record</th><th>Field Name</th><th>Value</th><th>Error Message</th></tr>
+  {% for e in errors %}
+  <tr>
+    <td>{{ e.record }}</td><td><code>{{ e.field }}</code></td>
+    <td class="overwrite">{{ e.value }}</td><td>{{ e.message }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+<p><a class="btn" href="{{ url_for('importexport.import_home', pid=g.project.id) }}">← Try again</a></p>
+
+{% elif stage == 'review' %}
+<div class="flash">
+  Your file passed validation. Review below, then confirm the import:
+  <strong>{{ n_values }}</strong> value(s) will be saved,
+  <strong>{{ n_new_records }}</strong> new record(s) created,
+  <strong style="color:var(--red)">{{ n_overwrites }}</strong> existing value(s)
+  will be <strong style="color:var(--red)">overwritten</strong>
+  (shown in red — check these carefully, overwriting cannot be undone).
+</div>
+<div class="table-wrap"><table>
+  <tr><th>Record</th>{% if g.project.is_longitudinal %}<th>Event</th>{% endif %}
+      <th>New?</th><th>Values</th></tr>
+  {% for r in review %}
+  <tr>
+    <td><strong>{{ r.record }}</strong></td>
+    {% if g.project.is_longitudinal %}<td>{{ events_by_id.get(r.event_id, '') }}</td>{% endif %}
+    <td>{{ 'new record' if r.is_new else '' }}</td>
+    <td>
+      {% for c in r.cells %}
+        <span class="pill">{{ c.field }}</span>
+        {% if c.overwrite %}
+          <span class="overwrite">{{ c.old }} → {{ c.value }}</span>
+        {% else %}<span class="newval">{{ c.value }}</span>{% endif %} &nbsp;
+      {% endfor %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+<form method="post" action="{{ url_for('importexport.commit', pid=g.project.id) }}">
+  <input type="hidden" name="token" value="{{ token }}">
+  <p>
+    <button class="btn" type="submit">✔ Confirm — import data</button>
+    <a class="btn btn-ghost" href="{{ url_for('importexport.import_home', pid=g.project.id) }}">Cancel</a>
+  </p>
+</form>
+{% endif %}
+{% endblock %}
